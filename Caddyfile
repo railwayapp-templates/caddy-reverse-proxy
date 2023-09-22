@@ -1,0 +1,31 @@
+{ # global options
+    admin off # theres no need for the admin api in railway's environment
+    persist_config off # storage isn't persistent anyway
+    auto_https off # railway handles https for us, this would cause issues if left enabled
+    log { # runtime logs
+        format console # set runtime log format to console mode 
+    }
+    servers { # server options
+        trusted_proxies static private_ranges # trust railway's proxy
+    }
+}
+
+:{$PORT} { # site block, listens on the $PORT environment variable, automatically assigned by railway
+    log { # access logs
+        format console # set access log format to console mode
+    }
+
+    reverse_proxy {$FRONTEND_HOST} # proxy all requests for /* to the frontend, configure this variable in the service settings
+
+    # the handle_path directive will strip /api/ from the path before proxying
+    # this is needed if your backend's api routes don't start with /api/
+    # change paths as needed
+    handle_path /api/* { # this strips the /api/ prefix from the uri sent to the proxy address
+        reverse_proxy {$BACKEND_HOST} # proxy all requests for /api/* to the backend, configure this variable in the service settings
+    }
+
+    # if your backend's api routes do start with /api/ then you wouldn't want to strip the path prefix
+    # if so, comment out the above handle_path block, and uncomment this reverse_proxy directive
+    # change paths as needed
+    # reverse_proxy {$BACKEND_HOST} # configure this variable in the service settings
+}
