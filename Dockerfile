@@ -1,4 +1,4 @@
-FROM caddy:2.7.4-alpine
+FROM caddy:latest
 
 COPY Caddyfile /etc/caddy/Caddyfile
 
