@@ -13,6 +13,20 @@
 	}
 }
 
+(lb_settings) {
+	lb_policy round_robin
+	lb_retries 100
+	lb_try_duration 10s
+	lb_try_interval 250ms
+}
+
+(passive_health_checks) {
+	fail_duration 60s
+	max_fails 300
+	unhealthy_latency 5s
+	unhealthy_request_count 200
+}
+
 # site block, listens on the $PORT environment variable, automatically assigned by railway
 :{$PORT} {
 	# access logs
@@ -20,22 +34,53 @@
 		format json # set access log format to json mode
 	}
 
-	reverse_proxy {$FRONTEND_HOST} # proxy all requests for /* to the frontend, configure this variable in the service settings
+	# proxy all requests for /* to the frontend, configure these variables in the service settings
+	reverse_proxy {
+		# for private networking replicas are exposed as multiple dns results, use those dns results as the upstreams
+		dynamic a {
+			name {$FRONTEND_DOMAIN}
+			port {$FRONTEND_PORT}
+			refresh 1s
+			dial_timeout 30s
+			versions ipv4 ipv6
+		}
 
-	# the handle_path directive WILL strip /api/ from the path before proxying
-	# this is needed if your backend's api routes don't start with /api/
-	# change paths as needed
-	handle_path /api/* {
-		# the /api/ prefix WILL be stripped from the uri sent to the proxy host
-		reverse_proxy {$BACKEND_HOST} # proxy all requests for /api/* to the backend, configure this variable in the service settings
+		# configure load balancing settings
+		import lb_settings
+
+		# configure passive health checks
+		import passive_health_checks
+
+		# sets the Host header to the header to the dynamic name and port options
+		header_up Host {upstream_hostport}
 	}
 
-	# this handle directive will NOT strip /api/ from the path before proxying
-	# if your backend's api routes do start with /api/ then you wouldn't want to strip the path prefix
-	# if so, comment out the above handle_path and reverse_proxy directives, and uncomment these handle and reverse_proxy directives
+	# the handle_path directive WILL strip /api/ from the path before proxying
+	# use `handle` instead of `handle_path` if you dont want to strip the /api/ path
+	# this is needed if your backend's api routes don't start with /api/
 	# change paths as needed
-	# handle /api/* {
-	# the /api/ prefix will NOT be stripped from the uri sent to the proxy host
-	# reverse_proxy {$BACKEND_HOST} # proxy all requests for /api/* to the backend, configure this variable in the service settings
-	# }
+	handle_path {$BACKEND_PATH:/api}/* {
+		# the /api/ prefix WILL be stripped from the uri sent to the proxy host
+		#
+		# proxy all requests for /api/* to the backend, configure this variable in the service settings
+		reverse_proxy {
+			# for private networking replicas are exposed as multiple dns results, use those dns results as the upstreams
+			dynamic a {
+				name {$BACKEND_DOMAIN}
+				port {$BACKEND_PORT}
+				refresh 1s
+				dial_timeout 30s
+				versions ipv4 ipv6
+			}
+
+			# configure load balancing settings
+			import lb_settings
+
+			# configure passive health checks
+			import passive_health_checks
+
+			# sets the Host header to the header to the dynamic name and port options
+			header_up Host {upstream_hostport}
+		}
+	}
 }

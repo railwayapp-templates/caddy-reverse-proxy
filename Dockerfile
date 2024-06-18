@@ -1,7 +1,13 @@
 FROM caddy:latest
 
-COPY Caddyfile /etc/caddy/Caddyfile
+WORKDIR /app
 
-RUN caddy fmt --overwrite /etc/caddy/Caddyfile
+COPY Caddyfile ./
 
-CMD exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile 2>&1
+COPY --chmod=755 entrypoint.sh ./
+
+RUN caddy fmt --overwrite Caddyfile
+
+ENTRYPOINT ["/bin/sh"]
+
+CMD ["entrypoint.sh"]
