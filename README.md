@@ -22,10 +22,10 @@ Example:
 
 ```
 FRONTEND_DOMAIN = ${{Frontend.RAILWAY_PRIVATE_DOMAIN}}
-FRONTEND_DOMAIN = ${{Frontend.PORT}}
+FRONTEND_PORT = ${{Frontend.PORT}}
 
-BACKEND_HOST = ${{Backend.RAILWAY_PRIVATE_DOMAIN}}
-BACKEND_HOST = ${{Backend.PORT}}
+BACKEND_DOMAIN = ${{Backend.RAILWAY_PRIVATE_DOMAIN}}
+BACKEND_PORT = ${{Backend.PORT}}
 ```
 
 **Relevant Caddy documentation:**
